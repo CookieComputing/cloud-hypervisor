@@ -33,7 +33,7 @@ use anyhow::anyhow;
 use kvm_bindings::kvm_create_guest_memfd;
 use kvm_ioctls::{NoDatamatch, VcpuFd, VmFd};
 #[cfg(feature = "sev_snp")]
-use log::debug;
+use log::{debug, info};
 #[cfg(target_arch = "x86_64")]
 use log::warn;
 use vmm_sys_util::errno;
@@ -567,6 +567,8 @@ pub struct KvmVm {
     sev_fd: Option<x86_64::sev::SevFd>,
     #[cfg(all(feature = "sev_snp", target_arch = "x86_64"))]
     snp_guest_policy: std::sync::OnceLock<u64>,
+    #[cfg(all(feature = "sev_snp", target_arch = "x86_64"))]
+    tsc_khz: Option<u32>,
     dirty_log_slots: RwLock<HashMap<u32, KvmDirtyLogSlot>>,
     guest_memfds: Option<RwLock<HashMap<u32, OwnedFd>>>,
 }
@@ -689,6 +691,19 @@ impl KvmVm {
 impl vm::Vm for KvmVm {
     #[cfg(all(feature = "sev_snp", target_arch = "x86_64"))]
     fn sev_snp_init(&self, guest_policy: igvm_defs::SnpPolicy) -> vm::Result<()> {
+        if let Some(tsc_khz) = self.tsc_khz {
+            const KVM_SET_TSC_KHZ: libc::c_ulong = 0xaea2;
+            let ret = unsafe {
+                libc::ioctl(self.fd.as_raw_fd(), KVM_SET_TSC_KHZ, tsc_khz as libc::c_ulong)
+            };
+            if ret < 0 {
+                return Err(vm::HypervisorVmError::SetTscKhz(
+                    std::io::Error::last_os_error(),
+                ));
+            }
+            info!("SEV-SNP: set VM TSC frequency to {tsc_khz} kHz");
+        }
+
         self.sev_fd
             .as_ref()
             .unwrap()
@@ -1623,6 +1638,8 @@ impl hypervisor::Hypervisor for KvmHypervisor {
                 sev_fd,
                 #[cfg(feature = "sev_snp")]
                 snp_guest_policy: std::sync::OnceLock::new(),
+                #[cfg(feature = "sev_snp")]
+                tsc_khz: _config.tsc_khz,
                 guest_memfds,
             }))
         }

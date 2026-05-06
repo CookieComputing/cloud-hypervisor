@@ -250,6 +250,8 @@ impl From<&VmConfig> for hypervisor::HypervisorVmConfig {
             mem_size: _value.memory.total_size(),
             #[cfg(feature = "sev_snp")]
             vmsa_features,
+            #[cfg(feature = "sev_snp")]
+            tsc_khz: _value.platform.as_ref().and_then(|p| p.tsc_khz),
             nested: _value.cpus.nested,
             smt_enabled: _value
                 .cpus

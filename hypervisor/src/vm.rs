@@ -201,6 +201,13 @@ pub enum HypervisorVmError {
     #[error("Failed to initialize SEV-SNP")]
     InitializeSevSnp(#[source] std::io::Error),
 
+    #[cfg(feature = "sev_snp")]
+    ///
+    /// Error setting VM-level TSC frequency for Secure TSC
+    ///
+    #[error("Failed to set VM TSC frequency")]
+    SetTscKhz(#[source] std::io::Error),
+
     #[cfg(feature = "tdx")]
     ///
     /// Error initializing TDX on the VM
