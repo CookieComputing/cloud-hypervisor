@@ -32,6 +32,7 @@ pub const GPA_METADATA_SHIFT_OFFSET: u32 = 12;
 
 // SNP in VMSA - linux/arch/x86/include/asm/svm.h
 const SVM_SEV_FEAT_SNP_ACTIVE: u64 = 1 << 0;
+pub const SVM_SEV_FEAT_SECURE_TSC: u64 = 1 << 9;
 
 fn sev_op(vm: &VmFd, sev_cmd: &mut kvm_sev_cmd, name: &str) -> Result<()> {
     let ret = vm.encrypt_op_sev(sev_cmd);

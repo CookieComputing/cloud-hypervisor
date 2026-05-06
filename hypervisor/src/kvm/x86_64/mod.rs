@@ -33,6 +33,8 @@ use crate::kvm::{Cap, Kvm, KvmError, KvmResult};
 
 #[cfg(feature = "sev_snp")]
 pub(crate) mod sev;
+#[cfg(feature = "sev_snp")]
+pub use sev::SVM_SEV_FEAT_SECURE_TSC;
 
 ///
 /// Check KVM extension for Linux

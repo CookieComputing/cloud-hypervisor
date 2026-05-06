@@ -234,6 +234,13 @@ pub enum Error {
 
 impl From<&VmConfig> for hypervisor::HypervisorVmConfig {
     fn from(_value: &VmConfig) -> Self {
+        #[allow(unused_mut)]
+        let mut vmsa_features: u64 = 0;
+        #[cfg(all(feature = "sev_snp", feature = "kvm", target_arch = "x86_64"))]
+        if _value.platform.as_ref().is_some_and(|p| p.secure_tsc) {
+            vmsa_features |= hypervisor::kvm::SVM_SEV_FEAT_SECURE_TSC;
+        }
+
         hypervisor::HypervisorVmConfig {
             #[cfg(feature = "tdx")]
             tdx_enabled: _value.platform.as_ref().is_some_and(|p| p.tdx),
@@ -242,7 +249,7 @@ impl From<&VmConfig> for hypervisor::HypervisorVmConfig {
             #[cfg(feature = "sev_snp")]
             mem_size: _value.memory.total_size(),
             #[cfg(feature = "sev_snp")]
-            vmsa_features: 0,
+            vmsa_features,
             nested: _value.cpus.nested,
             smt_enabled: _value
                 .cpus

@@ -137,6 +137,9 @@ pub struct PlatformConfig {
     #[cfg(feature = "sev_snp")]
     #[serde(default)]
     pub sev_snp: bool,
+    #[cfg(feature = "sev_snp")]
+    #[serde(default)]
+    pub secure_tsc: bool,
     #[serde(default)]
     pub iommufd: bool,
     #[serde(default = "default_platformconfig_vfio_p2p_dma")]

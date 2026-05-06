@@ -361,6 +361,9 @@ pub enum ValidationError {
     #[cfg(all(feature = "sev_snp", feature = "igvm"))]
     #[error("SEV-SNP requires an IGVM payload (--payload igvm=<path>)")]
     SevSnpRequiresIgvm,
+    #[cfg(feature = "sev_snp")]
+    #[error("Secure TSC requires SEV-SNP to be enabled")]
+    SecureTscRequiresSevSnp,
     /// Restore expects all net ids that have fds
     #[error("Net id {0} is associated with FDs and is required")]
     RestoreMissingRequiredNetId(String),
@@ -836,7 +839,7 @@ impl PlatformConfig {
             }
 
             if cfg!(feature = "sev_snp") {
-                syntax.push_str(",sev_snp=on|off");
+                syntax.push_str(",sev_snp=on|off,secure_tsc=on|off");
             }
 
             syntax.push('"');
@@ -862,6 +865,8 @@ impl PlatformConfig {
         parser.add("tdx");
         #[cfg(feature = "sev_snp")]
         parser.add("sev_snp");
+        #[cfg(feature = "sev_snp")]
+        parser.add("secure_tsc");
         parser.parse(platform).map_err(Error::ParsePlatform)?;
 
         let num_pci_segments: u16 = parser
@@ -906,6 +911,12 @@ impl PlatformConfig {
             .map_err(Error::ParsePlatform)?
             .unwrap_or(Toggle(false))
             .0;
+        #[cfg(feature = "sev_snp")]
+        let secure_tsc = parser
+            .convert::<Toggle>("secure_tsc")
+            .map_err(Error::ParsePlatform)?
+            .unwrap_or(Toggle(false))
+            .0;
         Ok(PlatformConfig {
             num_pci_segments,
             iommu_segments,
@@ -919,6 +930,8 @@ impl PlatformConfig {
             tdx,
             #[cfg(feature = "sev_snp")]
             sev_snp,
+            #[cfg(feature = "sev_snp")]
+            secure_tsc,
         })
     }
 
@@ -2840,6 +2853,10 @@ impl VmConfig {
         #[cfg(feature = "sev_snp")]
         {
             let sev_snp_enabled = self.platform.as_ref().is_some_and(|p| p.sev_snp);
+            let secure_tsc_enabled = self.platform.as_ref().is_some_and(|p| p.secure_tsc);
+            if secure_tsc_enabled && !sev_snp_enabled {
+                return Err(ValidationError::SecureTscRequiresSevSnp);
+            }
             if sev_snp_enabled {
                 let host_data_opt = &self.payload.as_ref().unwrap().host_data;
                 if let Some(host_data) = host_data_opt
@@ -4913,6 +4930,8 @@ id=\"{id}\",pci_segment={pci_segment},queue_sizes={queue_sizes}"
             tdx: false,
             #[cfg(feature = "sev_snp")]
             sev_snp: false,
+            #[cfg(feature = "sev_snp")]
+            secure_tsc: false,
         }
     }
 

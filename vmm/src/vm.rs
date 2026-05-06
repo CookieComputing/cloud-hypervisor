@@ -1367,7 +1367,7 @@ impl Vm {
                 vm_config.as_ref().lock().unwrap().deref().into();
             #[cfg(all(feature = "igvm", feature = "sev_snp"))]
             if let Some(ref igvm) = igvm_file {
-                hv_config.vmsa_features = igvm_loader::extract_sev_features(igvm);
+                hv_config.vmsa_features |= igvm_loader::extract_sev_features(igvm);
             }
             Self::create_hypervisor_vm(hypervisor.as_ref(), hv_config)?
         };

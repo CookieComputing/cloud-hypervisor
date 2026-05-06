@@ -71,6 +71,8 @@ use kvm_bindings::{
 use x86_64::check_required_kvm_extensions;
 #[cfg(target_arch = "x86_64")]
 pub use x86_64::{CpuId, ExtendedControlRegisters, MsrEntries, VcpuKvmState};
+#[cfg(all(feature = "sev_snp", target_arch = "x86_64"))]
+pub use x86_64::SVM_SEV_FEAT_SECURE_TSC;
 
 #[cfg(target_arch = "x86_64")]
 use crate::ClockData;
